@@ -4,6 +4,7 @@ services:
   ktbot:
     build: .
     container_name: ktbot
+    restart: always
     volumes:
       - /etc/localtime:/etc/localtime
     environment:
