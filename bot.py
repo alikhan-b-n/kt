@@ -100,7 +100,7 @@ def cm_sv_db(message, command_name):
     conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
-    now = datetime.now()
+    now = datetime.now() + timedelta(hours=6)
     print(now)
     now_updated = remove_milliseconds(now)
 
