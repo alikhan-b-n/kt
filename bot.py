@@ -4,20 +4,17 @@ from email.header import Header
 import smtplib
 import openpyxl
 import time
+import psycopg2
 from datetime import datetime, timedelta
 import pandas as pd
-import psycopg2
 
-bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
+bot = telebot.TeleBot('6063483502:AAEIgqFMOXFh_n7dzFuRyMSu4YHp7XUSiSo')
 
-data = {}
-
-admin = ['484489968', '760906879', '187663574', '498768757']
 
 categories = {
     'Learning.telecom.kz | Техническая поддержка': 'info.ktcu@telecom.kz',
     'Обучение | Корпоративный Университет': 'info.ktcu@telecom.kz',
-    'Служба поддержки “Нысана': 'nysana@cscc.kz',
+    'Служба поддержки “Нысана"': 'nysana@cscc.kz',
     'Обратиться в службу комплаенс': 'tlek.issakov@telecom.kz',
 }
 
@@ -32,6 +29,7 @@ kb_field_all = ["Логотипы и Брендбук", "Личный кабин
 instr_field = ["Брендбук и логотипы", "Личный кабинет telecom.kz", "Модемы | Настройка", "Lotus & CheckPoint"]
 adapt_field = ["Welcome курс | Адаптация"]
 new_message, user_name, chosen_category, flag, appeal_field = '', '', '', 0, False
+admin_id = ['484489968', '760906879']
 
 faq_1 = {
     'Ha кого направлена программа “Демеу” в AO “Казахтелеком”?': 'Социальная поддержка Программы «Демеу» AO «Казахтелеком»:  (далее - Программа) направлена работникам по статусу: \
@@ -80,7 +78,6 @@ button5 = types.KeyboardButton("Часто задаваемые вопросы")
 markup.add(button, button2, button3, button4, button5)
 
 
-
 def send_error(message):
     bot.send_photo(message.chat.id, photo=open('images/oops_error.jpg', 'rb'))
     time.sleep(0.5)
@@ -89,11 +86,10 @@ def send_error(message):
 
 
 def remove_milliseconds(dt):
-    formatted_dt = dt.strftime('%Y-%m-%d %H:%M:%S')  # Format datetime as string without milliseconds
-    modified_dt = datetime.strptime(formatted_dt, '%Y-%m-%d %H:%M:%S')  # Convert string back to datetime object
+    formatted_dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+    modified_dt = datetime.strptime(formatted_dt, '%Y-%m-%d %H:%M:%S')
+
     return modified_dt
-
-
 
 
 def cm_sv_db(message, command_name):
@@ -101,23 +97,63 @@ def cm_sv_db(message, command_name):
     cur = conn.cursor()
 
     now = datetime.now() + timedelta(hours=6)
-    print(now)
     now_updated = remove_milliseconds(now)
 
     cur.execute("INSERT INTO commands_history (id, commands_name, date) VALUES ('%s','%s','%s')" % (
         str(message.chat.id), command_name, now_updated))
-
     conn.commit()
     cur.close()
     conn.close()
 
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres", port=5432)
+def set_bool(message, instr, glossar):
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
-    cur.execute('CREATE TABLE IF NOT EXISTS users (id varchar(50) primary key, name varchar(50))')
+    cur.execute("UPDATE users SET instr = '%s', glossar ='%s' WHERE id = '%s'" % (
+        instr, glossar, str(message.chat.id)))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_glossar(message):
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    cur = conn.cursor()
+    cur.execute("SELECT glossar FROM users WHERE id='%s'" % (str(message.chat.id)))
+    glossar = cur.fetchall()
+    cur.close()
+    conn.close()
+    return glossar[0][0]
+
+
+def get_instr(message):
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    cur = conn.cursor()
+    cur.execute("SELECT instr FROM users WHERE id='%s'" % (str(message.chat.id)))
+    instr = cur.fetchall()
+    cur.close()
+    conn.close()
+    return instr[0][0]
+
+
+def get_users_id():
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM users")
+    users = cur.fetchall()
+    cur.close()
+    conn.close()
+    return users[0]
+
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    cur = conn.cursor()
+
+    cur.execute(
+        'CREATE TABLE IF NOT EXISTS users (id varchar(50) primary key, name varchar(50), instr bool, glossar bool)')
     cur.execute(
         'CREATE TABLE IF NOT EXISTS commands_history (id varchar(50), commands_name varchar(50), date timestamp)')
     conn.commit()
@@ -128,14 +164,13 @@ def start(message):
     users_id = cur.fetchall()
 
     if not any(id[0] == str(message.chat.id) for id in users_id):
-        cur.execute("INSERT INTO users (id, name) VALUES ('%s','%s')" % (
-        str(message.chat.id), str(message.from_user.first_name)))
+        cur.execute("INSERT INTO users (id, name, instr, glossar) VALUES ('%s','%s', '%s', '%s')" % (
+        str(message.chat.id), str(message.from_user.first_name), False, False))
 
     conn.commit()
     cur.close()
     conn.close()
 
-    data[str(message.chat.id)] = {'glossar': False, 'instr': False}
     welcome_message = f'Привет, {message.from_user.first_name} 👋\
                     \nЯ - ktbot, твой личный помощник в компании.\
                     \n\nBoт, как я могу тебе помочь:\
@@ -159,7 +194,7 @@ def start(message):
 @bot.message_handler(commands=['menu'])
 def menu(message):
     cm_sv_db(message, 'menu')
-    data[str(message.chat.id)] = {'glossar': False, 'instr': False}
+    set_bool(message, False, False)
     welcome_message = f'Вы в главном меню'
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
 
@@ -167,7 +202,6 @@ def menu(message):
 @bot.message_handler(commands=["help"])
 def help(message):
     cm_sv_db(message, '/help')
-
     bot.send_message(message.chat.id,
                      "Вы можете помочь нам стать лучше и отправить нам письмо на info.ktcu@telecom.kz.")
 
@@ -175,38 +209,37 @@ def help(message):
 def adaption(message):
     if message.text == "Welcome курс | Адаптация":
         cm_sv_db(message, 'Welcome курс | Адаптация')
-
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Рассказывай!", callback_data="Рассказывай!")
-        markup.add(button)
+        markup_adapt = types.InlineKeyboardMarkup()
+        button_adapt = types.InlineKeyboardButton("Рассказывай!", callback_data="Рассказывай!")
+        markup_adapt.add(button_adapt)
         bot.send_message(message.chat.id, f'Добро пожаловать в AO “Казахтелеком”🥳')
         time.sleep(0.75)
         bot.send_photo(message.chat.id, photo=open('images/dear_collegue.jpeg', 'rb'))
         time.sleep(0.75)
         bot.send_message(message.chat.id, "Только для начала расскажу тебе, как мной пользоваться 🫡",
-                         reply_markup=markup)
+                         reply_markup=markup_adapt)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.data == 'Рассказывай!':
         cm_sv_db(call.message, 'Рассказывай!')
-
         bot.send_photo(call.message.chat.id, photo=open('images/picture.jpg', 'rb'))
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Понятно", callback_data="Понятно")
-        markup.add(button)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Понятно", callback_data="Понятно")
+        markup_callback.add(button_callback)
         bot.send_message(call.message.chat.id, "Y меня есть клавиатура, пользуясь которой ты можешь переходить по "
-                                               "разделам и получать нужную для тебя информацию", reply_markup=markup)
+                                               "разделам и получать нужную для тебя информацию",
+                         reply_markup=markup_callback)
 
     if call.data == "Понятно":
         bot.send_photo(call.message.chat.id, photo=open('images/hello.jpg', 'rb'))
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Поехали!", callback_data="Поехали!")
-        markup.add(button)
-        bot.send_message(call.message.chat.id, "Жми на кнопку ниже и мы продолжаем.", reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Поехали!", callback_data="Поехали!")
+        markup_callback.add(button_callback)
+        bot.send_message(call.message.chat.id, "Жми на кнопку ниже и мы продолжаем.", reply_markup=markup_callback)
 
     if call.data == "Поехали!":
         bot.send_photo(call.message.chat.id, photo=open('images/kaztelecom_credo.jpeg', 'rb'))
@@ -219,21 +252,21 @@ def callback_handler(call):
         bot.send_document(call.message.chat.id, open('images/PDF-1.jpg', 'rb'))
         bot.send_document(call.message.chat.id, open('images/PDF-2.jpg', 'rb'))
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Да, давай!", callback_data="Да, давай!")
-        markup.add(button)
-        bot.send_message(call.message.chat.id, "Если все понятно, то продолжаем?", reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Да, давай!", callback_data="Да, давай!")
+        markup_callback.add(button_callback)
+        bot.send_message(call.message.chat.id, "Если все понятно, то продолжаем?", reply_markup=markup_callback)
 
     if call.data == "Да, давай!":
         bot.send_message(call.message.chat.id, "Y Тебя уже есть Бадди?")
         time.sleep(0.75)
         bot.send_message(call.message.chat.id, "Если еще нет, не расстраивайся, он найдет тебя в ближайшее время!")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Да, хочу узнать больше!", callback_data="Да, хочу узнать больше!")
-        markup.add(button)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Да, хочу узнать больше!", callback_data="Да, хочу узнать больше!")
+        markup_callback.add(button_callback)
         bot.send_message(call.message.chat.id, "Ты спросишь, a кто это и для чего он мне нужен? Отвечаю)",
-                         reply_markup=markup)
+                         reply_markup=markup_callback)
 
     if call.data == "Да, хочу узнать больше!":
         bot.send_photo(call.message.chat.id, photo=open('images/Buddy-1.jpg', 'rb'))
@@ -244,10 +277,10 @@ def callback_handler(call):
                                                "сообщение от Твоего Бадди c предложением встретиться, познакомиться и "
                                                "рассказать o программе адаптации в нашей Компании.")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Принято!", callback_data="Принято!")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/Buddy-3.jpg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Принято!", callback_data="Принято!")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/Buddy-3.jpg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Принято!":
         bot.send_message(call.message.chat.id,
@@ -256,18 +289,19 @@ def callback_handler(call):
         bot.send_message(call.message.chat.id,
                          "Кстати, участником программы Бадди может стать сотрудник любого отдела, и это здорово - расширяются горизонтальные и вертикальные связи.")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Круто, продолжаем дальше!", callback_data="Круто, продолжаем дальше!")
-        markup.add(button)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Круто, продолжаем дальше!",
+                                                     callback_data="Круто, продолжаем дальше!")
+        markup_callback.add(button_callback)
         bot.send_message(call.message.chat.id,
                          "Позже и Ты тоже можешь стать Бадди и помогать будущим новичкам адаптироваться! 😊",
-                         reply_markup=markup)
+                         reply_markup=markup_callback)
 
     if call.data == "Круто, продолжаем дальше!":
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Далее", callback_data="Далее-1")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/credo_1.jpeg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Далее", callback_data="Далее-1")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/credo_1.jpeg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Далее-1":
         bot.send_message(call.message.chat.id, "Наша компания состоит из 9 филиалов "
@@ -282,46 +316,46 @@ def callback_handler(call):
         time.sleep(0.75)
         bot.send_message(call.message.chat.id, "Базу знаний ты всегда можешь найти в главном меню.")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Далее", callback_data="Далее-3")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/gloss.jpg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Далее", callback_data="Далее-3")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/gloss.jpg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Далее-3":
         bot.send_message(call.message.chat.id, 'B компании AO "Казахтелеком" есть продукты по разным направлениям:\
                                              \n🌍Интepнeт\n📞Teлeфoния\n📹Bидeoнabлюдeниe\n🖥️TV+\n🛍️Maraзин shop.telecom.kz')
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Далее", callback_data="Далее-4")
-        markup.add(button)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Далее", callback_data="Далее-4")
+        markup_callback.add(button_callback)
         bot.send_message(call.message.chat.id,
                          "Актуальную информацию по продуктам и их тарифам ты всегда сможешь найти на сайте telecom.kz",
-                         reply_markup=markup)
+                         reply_markup=markup_callback)
 
     if call.data == "Далее-4":
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Далее", callback_data="Далее-5")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/dear_users.jpeg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Далее", callback_data="Далее-5")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/dear_users.jpeg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Далее-5":
         bot.send_message(call.message.chat.id, "☎️B AO 'Казахтелеком' интегрирована горячая линия «Нысана», "
                                                "куда каждый работник сможет обратиться посредством QR-кода "
                                                "или по контактам ниже в картинке")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Далее", callback_data="Далее-6")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/call_center.jpeg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Далее", callback_data="Далее-6")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/call_center.jpeg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Далее-6":
         bot.send_message(call.message.chat.id, "Отлично! \nMы c тобой познакомились c основной информацией o компании.\
                                              \n\nTы всегда можешь воспользоваться базой знаний или разделом часто задаваемых вопросов в главном меню бота.")
         time.sleep(0.75)
-        markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Понятно!", callback_data="Понятно!")
-        markup.add(button)
-        bot.send_photo(call.message.chat.id, photo=open('images/picture.jpg', 'rb'), reply_markup=markup)
+        markup_callback = types.InlineKeyboardMarkup()
+        button_callback = types.InlineKeyboardButton("Понятно!", callback_data="Понятно!")
+        markup_callback.add(button_callback)
+        bot.send_photo(call.message.chat.id, photo=open('images/picture.jpg', 'rb'), reply_markup=markup_callback)
 
     if call.data == "Понятно!":
         bot.send_message(call.message.chat.id, "Поздравляю!\nTы прошел Welcome курс.\n\nДoбpo пожаловать в компанию!.")
@@ -331,38 +365,32 @@ def callback_handler(call):
 
 def faq(message):
     if message.text == "Часто задаваемые вопросы":
-
         cm_sv_db(message, 'Часто задаваемые вопросы')
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-        button = types.KeyboardButton("Демеу")
-        button2 = types.KeyboardButton("Вопросы к HR")
-        markup.add(button, button2)
+        markup_faq = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        button_d = types.KeyboardButton("Демеу")
+        button_hr = types.KeyboardButton("Вопросы к HR")
+        markup_faq.add(button_d, button_hr)
         bot.send_message(message.chat.id, "Здесь Вы можете найти ответы на часто задаваемые вопросы",
-                         reply_markup=markup)
+                         reply_markup=markup_faq)
         time.sleep(0.75)
         bot.send_message(message.chat.id, "Ecли y Bac есть предложения/идеи по добавлению новых разделов или ответов на вопросы, \
                                        то напишите нам на info.ktcu@telecom.kz - мы обязательно рассмотрим Ваше предложение и свяжемся c Вами.")
 
     elif message.text == "Демеу":
-
         cm_sv_db(message, 'Демеу')
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        markup_faq = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         for key in faq_1:
-            button = types.KeyboardButton(key)
-            markup.add(button)
-        bot.send_message(message.chat.id, "Выберите, пожалуйста, вопрос", reply_markup=markup)
+            button_d = types.KeyboardButton(key)
+            markup_faq.add(button_d)
+        bot.send_message(message.chat.id, "Выберите, пожалуйста, вопрос", reply_markup=markup_faq)
 
     elif message.text == "Вопросы к HR":
-
         cm_sv_db(message, 'Вопросы к HR')
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        markup_faq = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         for key in faq_2:
-            button = types.KeyboardButton(key)
-            markup.add(button)
-        bot.send_message(message.chat.id, "Выберите, пожалуйста, вопрос", reply_markup=markup)
+            button_hr = types.KeyboardButton(key)
+            markup_faq.add(button_hr)
+        bot.send_message(message.chat.id, "Выберите, пожалуйста, вопрос", reply_markup=markup_faq)
 
 
 def glossary(message):
@@ -438,10 +466,8 @@ def instructions(message):
 
 def kb(message):
     if message.text == "База знаний":
-
         cm_sv_db(message, 'База знаний')
-
-        data[str(message.chat.id)] = {'glossar': False, 'instr': False}
+        set_bool(message, False, False)
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         button = types.KeyboardButton("База инструкций")
         button2 = types.KeyboardButton("Глоссарий")
@@ -454,10 +480,8 @@ def kb(message):
                          "компании каждый день.")
 
     elif message.text == "База инструкций":
-
         cm_sv_db(message, 'База инструкций')
-
-        data[str(message.chat.id)] = {'glossar': False, 'instr': True}
+        set_bool(message, True, False)
         markup_instr = types.ReplyKeyboardMarkup(row_width=1)
         button1 = types.KeyboardButton("Логотипы и Брендбук")
         button2 = types.KeyboardButton("Личный кабинет telecom.kz")
@@ -475,10 +499,8 @@ def kb(message):
                          "Для выбора инструкции выберите категория, a затем саму инструкцию в меню-клавиатуре.")
 
     elif message.text == "Глоссарий":
-
         cm_sv_db(message, 'Глоссарий')
-
-        data[str(message.chat.id)] = {'glossar': True, 'instr': False}
+        set_bool(message, False, True)
         bot.send_message(message.chat.id, "Глоссарий терминов и аббревиатур в компании AO Казахтелеком.")
         time.sleep(0.5)
         bot.send_message(message.chat.id, "Для того, чтобы получить расшифровку аббревиатуры или описание термина- "
@@ -490,9 +512,7 @@ def kb(message):
 
 def biot(message):
     if message.text == "Заполнить карточку БиОТ":
-
         cm_sv_db(message, 'Заполнить карточку БиОТ')
-
         markup = types.ReplyKeyboardMarkup(row_width=1)
         button = types.KeyboardButton("Опасный фактор/условие")
         button2 = types.KeyboardButton("Поведение при выполнении работ")
@@ -580,68 +600,87 @@ def appeal(message):
 
 def send_gmails(message):
     global chosen_category, appeal_field
-    # creates SMTP session
     s = smtplib.SMTP('smtp.gmail.com', 587)
-
-    # start TLS for security
     s.starttls()
-
-    # Authentication
     s.login("sending1001@gmail.com", "njdhfqafaajixebg")
-
-    # message to be sent
     msg = MIMEText(message, 'plain', 'utf-8')
     subject = chosen_category
-
     msg['Subject'] = Header(subject, 'utf-8')
-
-    # sending the mail
     s.sendmail("sending1001@gmail.com", categories[chosen_category], msg.as_string())
     appeal_field, chosen_category = False, ''
-    # terminating the session
     s.quit()
 
 
-@bot.message_handler(commands=['commands'])
-def commands_history(message):
-    if str(message.chat.id) not in admin:
-        send_error(message)
-    else:
-        conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres", port=5432)
+@bot.message_handler(commands=['get_excel'])
+def get_excel(message):
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM commands_history")
+    commands_list = cur.fetchall()
+    df = pd.read_sql_query("SELECT * FROM commands_history", conn)
+    df.to_excel('output_file.xlsx', index=False)
+    with open('output_file.xlsx', 'rb') as file:
+        bot.send_document(message.chat.id, file)
+    cur.close()
+    conn.close()
+
+
+
+@bot.message_handler(commands=['broadcast'])
+def info_broadcast(message):
+    if str(message.chat.id) not in admin_id:
+        return
+    msg = bot.reply_to(message, 'Введите текст')
+    bot.register_next_step_handler(msg, text_check)
+
+
+def text_check(message):
+    markup_text_check = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    button_yes = types.KeyboardButton("Да")
+    button_no = types.KeyboardButton("Нет")
+    markup_text_check.add(button_yes, button_no)
+    msg = bot.reply_to(message, "Вы уверены что хотите отправить это сообщение?", reply_markup=markup_text_check)
+    bot.register_next_step_handler(msg, message_sender, message)
+
+
+def message_sender(message, broadcast_message):
+    if message.text.upper() == "ДА":
+        conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
         cur = conn.cursor()
-
-        cur.execute("SELECT * FROM commands_history")
-
-        commands_list = cur.fetchall()
-        df = pd.read_sql_query("SELECT * FROM commands_history", conn)
-        df.to_excel('output_file.xlsx', index=False)
-        # send_file('output_file.xlsx', as_attachment=True)
-        list = ''
-        for command in commands_list:
-            list += f'id={command[0]} command={command[1]} date={command[2]}\n'
-
-        bot.send_message(message.chat.id, list)
-
+        cur.execute('SELECT id FROM users')
+        users_id = cur.fetchall()
         cur.close()
         conn.close()
+        for id in users_id:
+            if broadcast_message.photo:
+                photo_id = broadcast_message.photo[-1].file_id
+                bot.send_photo(id[0], photo_id, broadcast_message.caption)
 
+            if broadcast_message.audio:
+                audio_id = broadcast_message.audio.file_id
+                bot.send_video(id[0], audio_id, broadcast_message.caption)
 
-@bot.message_handler(commands=['get_excel'])
-def get_exel(message):
-    if str(message.chat.id) not in admin:
-        send_error(message)
+            if broadcast_message.video:
+                video_id = broadcast_message.video.file_id
+                bot.send_video(id[0], video_id, broadcast_message.caption)
+
+            if broadcast_message.voice:
+                voice_id = broadcast_message.voice.file_id
+                bot.send_voice(id[0], voice_id, broadcast_message.caption)
+
+            if broadcast_message.text:
+                bot.send_message(id[0], broadcast_message.text)
+    elif message.text.upper() == "НЕТ":
+        bot.send_message(message.chat.id, "Вызовите функцию /broadcast чтобы вызвать комманду рассылки еще раз")
     else:
-        with open('output_file.xlsx', 'rb') as file:
-            bot.send_document(message.chat.id, file)
+        send_error(message)
 
 
 @bot.message_handler(content_types=['text'])
 def mess(message):
-    print(message.text)
-    get_message = message.text.strip()
+    get_message = message.text
     if get_message in faq_field:
         faq(message)
-
     elif get_message in faq_1.keys() or get_message in faq_2.keys():
 
         if get_message in faq_1.keys():
@@ -649,23 +688,18 @@ def mess(message):
 
         elif get_message in faq_2.keys():
             bot.send_message(message.chat.id, faq_2[message.text])
-
     elif get_message in biot_field:
         biot(message)
-
     elif get_message == "Оставить обращение" or appeal_field == True:
         appeal(message)
-
     elif get_message in kb_field:
         kb(message)
     elif get_message in adapt_field:
         adaption(message)
-
-    elif str(message.chat.id) in data.keys():
-        if data[str(message.chat.id)]['glossar'] == True:
+    elif str(message.chat.id) in get_users_id():
+        if get_glossar(message):
             glossary(message)
-
-        elif data[str(message.chat.id)]['instr'] == True and message.text in kb_field_all:
+        elif get_instr(message) and message.text in kb_field_all:
             instructions(message)
 
         else:
