@@ -8,7 +8,7 @@ import psycopg2
 from datetime import datetime, timedelta
 import pandas as pd
 
-bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
+bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
 
 
 categories = {
