@@ -8,7 +8,7 @@ import psycopg2
 from datetime import datetime, timedelta
 import pandas as pd
 
-bot = telebot.TeleBot('6063483502:AAEIgqFMOXFh_n7dzFuRyMSu4YHp7XUSiSo')
+bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
 
 
 categories = {
@@ -29,7 +29,7 @@ kb_field_all = ["Логотипы и Брендбук", "Личный кабин
 instr_field = ["Брендбук и логотипы", "Личный кабинет telecom.kz", "Модемы | Настройка", "Lotus & CheckPoint"]
 adapt_field = ["Welcome курс | Адаптация"]
 new_message, user_name, chosen_category, flag, appeal_field = '', '', '', 0, False
-admin_id = ['484489968', '760906879']
+admin_id = ['484489968', '187663574']
 
 faq_1 = {
     'Ha кого направлена программа “Демеу” в AO “Казахтелеком”?': 'Социальная поддержка Программы «Демеу» AO «Казахтелеком»:  (далее - Программа) направлена работникам по статусу: \
@@ -153,7 +153,7 @@ def start(message):
     cur = conn.cursor()
 
     cur.execute(
-        'CREATE TABLE IF NOT EXISTS users (id varchar(50) primary key, name varchar(50), instr bool, glossar bool)')
+        'CREATE TABLE IF NOT EXISTS users (id varchar(50) primary key, firstname varchar(50), lastname varchar(50), instr bool, glossar bool)')
     cur.execute(
         'CREATE TABLE IF NOT EXISTS commands_history (id varchar(50), commands_name varchar(50), date timestamp)')
     conn.commit()
@@ -164,8 +164,8 @@ def start(message):
     users_id = cur.fetchall()
 
     if not any(id[0] == str(message.chat.id) for id in users_id):
-        cur.execute("INSERT INTO users (id, name, instr, glossar) VALUES ('%s','%s', '%s', '%s')" % (
-        str(message.chat.id), str(message.from_user.first_name), False, False))
+        cur.execute("INSERT INTO users (id, firstname, lastname, instr, glossar) VALUES ('%s','%s', '%s', '%s', '%s')" % (
+        str(message.chat.id), str(message.from_user.first_name), str(message.from_user.last_name), False, False))
 
     conn.commit()
     cur.close()
@@ -181,7 +181,7 @@ def start(message):
                     \n\nA если ты новый работник, то рекомендую пройти Welcome курс😊.'
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
     time.sleep(0.5)
-    with open("images/menu.jpg", 'rb') as photo_file:
+    with open('images/menu.jpg', 'rb') as photo_file:
         bot.send_photo(message.chat.id, photo_file)
     time.sleep(0.5)
     bot.send_message(message.chat.id, "B моем сценарии есть несколько команд:\
@@ -613,11 +613,13 @@ def send_gmails(message):
 
 @bot.message_handler(commands=['get_excel'])
 def get_excel(message):
+    if str(message.chat.id) not in admin_id:
+        return
     conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT * FROM commands_history")
     commands_list = cur.fetchall()
-    df = pd.read_sql_query("SELECT * FROM commands_history", conn)
+    df = pd.read_sql_query("SELECT users.id, firstname, lastname, commands_name, commands_history.date  FROM commands_history full outer join users on commands_history.id = users.id", conn)
     df.to_excel('output_file.xlsx', index=False)
     with open('output_file.xlsx', 'rb') as file:
         bot.send_document(message.chat.id, file)
