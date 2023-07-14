@@ -8,7 +8,7 @@ import psycopg2
 from datetime import datetime, timedelta
 import pandas as pd
 
-bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
+bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
 
 
 categories = {
@@ -21,7 +21,6 @@ categories = {
 faq_field = ["Часто задаваемые вопросы", "Демеу", "Вопросы к HR"]
 biot_field = ["Заполнить карточку БиОТ", "Опасный фактор/условие", "Поведение при выполнении работ", "Предложения/Идеи"]
 kb_field = ["База знаний", "База инструкций", "Глоссарий"]
-
 kb_field_all = ["Логотипы и Брендбук", "Личный кабинет telecom.kz", "Модемы | Настройка", "Lotus | Инструкции",
                 "Мобильная версия", "ПК или ноутбук", "portal.telecom.kz | Инструкции",
                 "CheckPoint VPN | Удаленная работа", "Командировка | Порядок оформления",
@@ -93,7 +92,7 @@ def remove_milliseconds(dt):
 
 
 def cm_sv_db(message, command_name):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     now = datetime.now() + timedelta(hours=6)
@@ -107,7 +106,7 @@ def cm_sv_db(message, command_name):
 
 
 def set_bool(message, instr, glossar):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     cur.execute("UPDATE users SET instr = '%s', glossar ='%s' WHERE id = '%s'" % (
@@ -118,7 +117,7 @@ def set_bool(message, instr, glossar):
 
 
 def get_glossar(message):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT glossar FROM users WHERE id='%s'" % (str(message.chat.id)))
     glossar = cur.fetchall()
@@ -128,7 +127,7 @@ def get_glossar(message):
 
 
 def get_instr(message):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT instr FROM users WHERE id='%s'" % (str(message.chat.id)))
     instr = cur.fetchall()
@@ -138,18 +137,22 @@ def get_instr(message):
 
 
 def get_users_id():
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT id FROM users")
     users = cur.fetchall()
     cur.close()
     conn.close()
-    return users[0]
+    users_array = []
+    for user in users:
+        users_array.append(str(user[0]))
+
+    return users_array
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     cur.execute(
@@ -467,7 +470,7 @@ def instructions(message):
 def kb(message):
     if message.text == "База знаний":
         cm_sv_db(message, 'База знаний')
-        set_bool(message, False, False)
+        set_bool(message, True, False)
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         button = types.KeyboardButton("База инструкций")
         button2 = types.KeyboardButton("Глоссарий")
@@ -615,7 +618,7 @@ def send_gmails(message):
 def get_excel(message):
     if str(message.chat.id) not in admin_id:
         return
-    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT * FROM commands_history")
     commands_list = cur.fetchall()
@@ -625,7 +628,6 @@ def get_excel(message):
         bot.send_document(message.chat.id, file)
     cur.close()
     conn.close()
-
 
 
 @bot.message_handler(commands=['broadcast'])
@@ -647,7 +649,7 @@ def text_check(message):
 
 def message_sender(message, broadcast_message):
     if message.text.upper() == "ДА":
-        conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
+        conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
         cur = conn.cursor()
         cur.execute('SELECT id FROM users')
         users_id = cur.fetchall()
@@ -680,19 +682,18 @@ def message_sender(message, broadcast_message):
 
 @bot.message_handler(content_types=['text'])
 def mess(message):
-    get_message = message.text
+    get_message = message.text.strip()
+    bot.send_message(message.chat.id, get_message)
     if get_message in faq_field:
         faq(message)
     elif get_message in faq_1.keys() or get_message in faq_2.keys():
-
         if get_message in faq_1.keys():
             bot.send_message(message.chat.id, faq_1[message.text])
-
         elif get_message in faq_2.keys():
             bot.send_message(message.chat.id, faq_2[message.text])
     elif get_message in biot_field:
         biot(message)
-    elif get_message == "Оставить обращение" or appeal_field == True:
+    elif get_message == "Оставить обращение" or appeal_field:
         appeal(message)
     elif get_message in kb_field:
         kb(message)
