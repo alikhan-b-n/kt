@@ -92,7 +92,7 @@ def remove_milliseconds(dt):
 
 
 def cm_sv_db(message, command_name):
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     now = datetime.now() + timedelta(hours=6)
@@ -106,7 +106,7 @@ def cm_sv_db(message, command_name):
 
 
 def set_bool(message, instr, glossar):
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     cur.execute("UPDATE users SET instr = '%s', glossar ='%s' WHERE id = '%s'" % (
@@ -117,7 +117,7 @@ def set_bool(message, instr, glossar):
 
 
 def get_glossar(message):
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT glossar FROM users WHERE id='%s'" % (str(message.chat.id)))
     glossar = cur.fetchall()
@@ -127,7 +127,7 @@ def get_glossar(message):
 
 
 def get_instr(message):
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT instr FROM users WHERE id='%s'" % (str(message.chat.id)))
     instr = cur.fetchall()
@@ -137,7 +137,7 @@ def get_instr(message):
 
 
 def get_users_id():
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT id FROM users")
     users = cur.fetchall()
@@ -152,7 +152,7 @@ def get_users_id():
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     cur.execute(
@@ -618,7 +618,7 @@ def send_gmails(message):
 def get_excel(message):
     if str(message.chat.id) not in admin_id:
         return
-    conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
     cur.execute("SELECT * FROM commands_history")
     commands_list = cur.fetchall()
@@ -649,7 +649,7 @@ def text_check(message):
 
 def message_sender(message, broadcast_message):
     if message.text.upper() == "ДА":
-        conn = psycopg2.connect(user="postgres", password="postgres", database="postgres")
+    conn = psycopg2.connect(host='db' user="postgres", password="postgres", database="postgres")
         cur = conn.cursor()
         cur.execute('SELECT id FROM users')
         users_id = cur.fetchall()
