@@ -8,13 +8,13 @@ import psycopg2
 from datetime import datetime, timedelta
 import pandas as pd
 
-bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
+bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
 
 
 categories = {
     'Learning.telecom.kz | Техническая поддержка': 'info.ktcu@telecom.kz',
     'Обучение | Корпоративный Университет': 'info.ktcu@telecom.kz',
-    'Служба поддержки “Нысана"': 'nysana@cscc.kz',
+    'Служба поддержки "Нысана"': 'nysana@cscc.kz',
     'Обратиться в службу комплаенс': 'tlek.issakov@telecom.kz',
 }
 
