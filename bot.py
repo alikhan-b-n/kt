@@ -683,7 +683,6 @@ def message_sender(message, broadcast_message):
 @bot.message_handler(content_types=['text'])
 def mess(message):
     get_message = message.text.strip()
-    bot.send_message(message.chat.id, get_message)
     if get_message in faq_field:
         faq(message)
     elif get_message in faq_1.keys() or get_message in faq_2.keys():
