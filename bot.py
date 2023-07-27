@@ -124,13 +124,8 @@ def start(message):
     # bot.send_sticker(message.chat.id, sticker_file)
     # bot.send_message(message.chat.id, "Я - ktbot, твой личный помощник в компании.", reply_markup=btn_markup)
 
-    welcome_message = f'Привет, {message.from_user.first_name} 👋\
-                            \n\nBoт, как я могу тебе помочь:\
-                            \n   · ✉️Отправить обращение по вопросам обучения;\
-                            \n   · 🗃️Предоставить доступ к Базе знаний c инструкциями и глоссарием;\
-                            \n   · 👷Помочь отправить карточку БиОТ;\
-                            \n   · 📄Предоставить ответы на часто задаваемые вопросы.\
-                            \n\nA если ты новый работник, то рекомендую пройти Welcome курс😊.'
+    welcome_message = f'Привет, {message.from_user.first_name} 👋'
+                            
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
     time.sleep(0.5)
     with open('images/menu.jpg', 'rb') as photo_file:
