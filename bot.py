@@ -6,7 +6,7 @@ import openpyxl
 
 import db_connect
 
-bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
+bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
 
 
 categories = {
