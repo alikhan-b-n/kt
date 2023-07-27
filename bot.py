@@ -6,7 +6,7 @@ import openpyxl
 
 import db_connect
 
-bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
+bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
 
 
 categories = {
@@ -18,7 +18,7 @@ categories = {
 
 faq_field = ["Часто задаваемые вопросы", "Демеу", "Вопросы к HR"]
 biot_field = ["Заполнить карточку БиОТ", "Опасный фактор/условие", "Поведение при выполнении работ", "Предложения/Идеи"]
-kb_field = ["База знаний", "База инструкций", "Глоссарий"]
+kb_field = ["База знаний", "База инструкций", "Глоссарий", "Полезные ссылки"]
 kb_field_all = ["Логотипы и Брендбук", "Личный кабинет telecom.kz", "Модемы | Настройка", "Lotus | Инструкции",
                 "Мобильная версия", "ПК или ноутбук", "portal.telecom.kz | Инструкции",
                 "CheckPoint VPN | Удаленная работа", "Командировка | Порядок оформления",
@@ -125,7 +125,7 @@ def start(message):
     # bot.send_message(message.chat.id, "Я - ktbot, твой личный помощник в компании.", reply_markup=btn_markup)
 
     welcome_message = f'Привет, {message.from_user.first_name} 👋'
-                            
+
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
     time.sleep(0.5)
     with open('images/menu.jpg', 'rb') as photo_file:
@@ -493,7 +493,8 @@ def kb(message):
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         button = types.KeyboardButton("База инструкций")
         button2 = types.KeyboardButton("Глоссарий")
-        markup.add(button, button2)
+        button3 = types.KeyboardButton("Полезные ссылки")
+        markup.add(button, button2, button3)
         bot.send_message(message.chat.id, "Добро пожаловать в мобильную базу знаний!", reply_markup=markup)
         time.sleep(0.75)
         bot.send_message(message.chat.id,
