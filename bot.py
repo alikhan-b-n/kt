@@ -100,23 +100,12 @@ def start(message):
         'CREATE TABLE IF NOT EXISTS users_info(id varchar(50), instr bool, glossar bool, new_message varchar(200), '
         'chosen_category varchar(50),appeal_field bool)')
     conn.commit()
-
-    db_connect.cm_sv_db(message, '/start')
-
-    cur.execute('SELECT id FROM users')
-    users_id = cur.fetchall()
-
-    if not any(id[0] == str(message.chat.id) for id in users_id):
-        cur.execute("INSERT INTO users (id, username, lastname, firstname, language) "
-                    "VALUES ('%s','%s', '%s', '%s', '%s')" % (str(message.chat.id), str(message.from_user.username),
-                                                              str(message.from_user.first_name),
-                                                              str(message.from_user.last_name), 'n'))
-        cur.execute("INSERT INTO users_info(id , instr , glossar, new_message, chosen_category, appeal_field ) "
-                    "VALUES ('%s', '%s', '%s', '%s', '%s', '%s')" % (str(message.chat.id), False, False, '', '', False))
-    db_connect.clear_appeals(message)
-    conn.commit()
     cur.close()
     conn.close()
+    db_connect.cm_sv_db(message, '/start')
+    db_connect.clear_appeals(message)
+    db_connect.addIfNotExistsUser(message)
+
     # sticker_file = open("images/sticker.webp", 'rb')
     # btn = types.InlineKeyboardButton("Узнать что я умею делать", callback_data="intro")
     # btn_markup = types.InlineKeyboardMarkup()
@@ -162,6 +151,7 @@ def start(message):
 
 @bot.message_handler(commands=['menu'])
 def menu(message):
+    db_connect.addIfNotExistUser(message)
     db_connect.cm_sv_db(message, 'menu')
     db_connect.set_bool(message, False, False)
     welcome_message = f'Вы в главном меню'
