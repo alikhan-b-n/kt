@@ -6,7 +6,7 @@ import openpyxl
 
 import db_connect
 
-bot = telebot.TeleBot('5960131409:AAHfLEtb7S35d0SvX_mK7aOOQdI_pbKZa7g')
+bot = telebot.TeleBot('6145415028:AAFDb2qjUr4AgqipnmDCCTLnBChF49cyE9U')
 
 
 categories = {
@@ -490,7 +490,7 @@ def kb(message):
     if message.text == "База знаний":
         db_connect.cm_sv_db(message, 'База знаний')
         db_connect.set_bool(message, True, False)
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=1)
         button = types.KeyboardButton("База инструкций")
         button2 = types.KeyboardButton("Глоссарий")
         button3 = types.KeyboardButton("Полезные ссылки")
