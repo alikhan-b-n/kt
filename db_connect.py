@@ -141,3 +141,22 @@ def send_gmails(message, categories, chosen_category):
     msg['Subject'] = Header(subject, 'utf-8')
     s.sendmail("sending1001@gmail.com", categories[chosen_category], msg.as_string())
     s.quit() 
+
+
+def addIfNotExistUser(message):
+    conn = psycopg2.connect(user="postgres", password="j7hPC180")
+    cur = conn.cursor()
+
+    cur.execute('SELECT id FROM users')
+    users_id = cur.fetchall()
+
+    if not any(id[0] == str(message.chat.id) for id in users_id):
+        cur.execute("INSERT INTO users (id, username, lastname, firstname, language) "
+                    "VALUES ('%s','%s', '%s', '%s', '%s')" % (str(message.chat.id), str(message.from_user.username),
+                                                              str(message.from_user.first_name),
+                                                              str(message.from_user.last_name), 'n'))
+        cur.execute("INSERT INTO users_info(id , instr , glossar, new_message, chosen_category, appeal_field ) "
+                    "VALUES ('%s', '%s', '%s', '%s', '%s', '%s')" % (str(message.chat.id), False, False, '', '', False))
+    conn.commit()
+    cur.close()
+    conn.close()
