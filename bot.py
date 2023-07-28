@@ -104,7 +104,7 @@ def start(message):
     conn.close()
     db_connect.cm_sv_db(message, '/start')
     db_connect.clear_appeals(message)
-    db_connect.addIfNotExistsUser(message)
+    db_connect.addIfNotExistUser(message)
 
     # sticker_file = open("images/sticker.webp", 'rb')
     # btn = types.InlineKeyboardButton("Узнать что я умею делать", callback_data="intro")
