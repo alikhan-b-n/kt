@@ -519,7 +519,7 @@ def kb(message):
                          reply_markup=markup_instr)
         time.sleep(0.5)
         bot.send_message(message.chat.id,
-                         "Для выбора инструкции выберите категория, a затем саму инструкцию в меню-клавиатуре.")
+                         "Для выбора инструкции выберите раздел, a затем саму инструкцию в меню-клавиатуре.")
 
     elif message.text == "Глоссарий":
         db_connect.cm_sv_db(message, 'Глоссарий')
@@ -546,7 +546,8 @@ def kb(message):
         button5 = types.InlineKeyboardButton(text='СФ чат', url='https://t.me/sf_kazakhtelecom')
         button6 = types.InlineKeyboardButton(text='Промышленный чат-бот', url='https://t.me/Lira_SF_bot')
         button7 = types.InlineKeyboardButton(text='Забота о сотрудниках', url='https://t.me/+I8Okb3LFgKExYWZi')
-        markup.add(button1, button2, button3, button4, button5, button6, button7)
+        button8 = types.InlineKeyboardButton(text='EX | Вопросы и обращения', url='https://t.me/contactingKT')
+        markup.add(button1, button2, button3, button4, button5, button6, button7, button8)
         # bot.send_message(message.chat.id, "m \n Промышленный чат-бот (Сервисная фабрика): https://t.me/Lira_SF_bot \n Забота о сотрудниках(СФ): https://t.me/+I8Okb3LFgKExYWZi")
         bot.send_message(message.chat.id, "Полезные ссылки", reply_markup=markup)
 
