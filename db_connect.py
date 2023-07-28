@@ -140,4 +140,4 @@ def send_gmails(message, categories, chosen_category):
     subject = chosen_category
     msg['Subject'] = Header(subject, 'utf-8')
     s.sendmail("sending1001@gmail.com", categories[chosen_category], msg.as_string())
-    s.quit()
+    s.quit() 
