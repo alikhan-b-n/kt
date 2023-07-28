@@ -144,7 +144,7 @@ def send_gmails(message, categories, chosen_category):
 
 
 def addIfNotExistUser(message):
-    conn = psycopg2.connect(user="postgres", password="j7hPC180")
+    conn = psycopg2.connect(host='db', user="postgres", password="postgres", database="postgres")
     cur = conn.cursor()
 
     cur.execute('SELECT id FROM users')
